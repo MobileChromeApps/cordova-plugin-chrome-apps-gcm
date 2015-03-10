@@ -4,106 +4,136 @@
 
 package org.chromium;
 
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaArgs;
-import org.apache.cordova.CordovaInterface;
-import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.PluginResult;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 
-import java.util.ArrayList;
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaArgs;
+import org.apache.cordova.CordovaPlugin;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChromeGcm extends CordovaPlugin {
     private static final String LOG_TAG = "ChromeGcm";
-    private static final String PAYLOAD_LABEL = "payload";
-    // TODO: Make these private when all logic moved into this class
-    public static final String EVENT_ACTION_DELETED = "deleted";
-    public static final String EVENT_ACTION_MESSAGE = "message";
-    public static final String EVENT_ACTION_SEND_ERROR = "send_error";
+    private static final String EVENT_ACTION_DELETED = "deleted";
+    private static final String EVENT_ACTION_MESSAGE = "message";
+    private static final String EVENT_ACTION_SEND_ERROR = "send_error";
+    private static final String DATA_PAYLOAD = "Payload";
 
-    private static CordovaWebView webView;
-    private static boolean safeToFireMessages = false;
-    private static ChromeGcm pluginInstance;
-    private static List<EventInfo> pendingEvents = new ArrayList<EventInfo>();
-    private ExecutorService executorService;
+    private static BackgroundEventHandler<ChromeGcm> eventHandler;
 
     AtomicInteger msgId = new AtomicInteger();
     GoogleCloudMessaging gcm;
-    private static Context context;
-    private CallbackContext messageChannel;
 
-    private static class EventInfo {
-        public String action;
-        public String messageId;
-        public String payload;
-
-        public EventInfo(String action, String messageId, String payload) {
-            this.action = action;
-            this.messageId = messageId;
-            this.payload = payload;
+    static BackgroundEventHandler<ChromeGcm> getEventHandler() {
+        if (eventHandler == null) {
+            eventHandler = createEventHandler();
         }
+        return eventHandler;
     }
 
-    public static void handleGcmAction(Context context, Intent intent, String action, String payload) {
-        if (pluginInstance != null && pluginInstance.messageChannel != null) {
-            Log.w(LOG_TAG, "Firing event to already running webview");
-            pluginInstance.sendGCMEvent(action, payload);
-        } else {
-            pendingEvents.add(new EventInfo(action, null, payload));
-            if (pluginInstance == null) {
-                startApp(context);
+    private static BackgroundEventHandler<ChromeGcm> createEventHandler() {
+
+        return new BackgroundEventHandler<ChromeGcm>() {
+
+            @Override
+            protected BackgroundEventInfo mapBroadcast(Context context, Intent intent) {
+
+                GoogleCloudMessaging gcm = GoogleCloudMessaging.getInstance(context);
+                String messageType = gcm.getMessageType(intent);
+
+                String action = getGcmAction(messageType);
+
+                if (action == null)
+                {
+                    // NOTE: There are GCM message types that are ignored here, but will still
+                    // cause the app to start.  We must assume the app could be running even if
+                    // the message type is not recognized/handled.
+                    return null;
+                }
+
+                JSONObject payload = extractGcmPayload(intent);
+
+                BackgroundEventInfo event = new BackgroundEventInfo(action);
+                event.getData().putString(DATA_PAYLOAD, payload.toString());
+
+                return event;
             }
-        }
+
+            @Override
+            protected void mapEventToMessage(BackgroundEventInfo event, JSONObject message) throws JSONException {
+
+                message.put("action", event.action);
+
+                String payloadContent = event.getData().getString(DATA_PAYLOAD);
+
+                if (EVENT_ACTION_MESSAGE.equals(event.action)) {
+                    JSONObject messageData = new JSONObject();
+                    messageData.put("data", new JSONObject(payloadContent));
+                    //messageData.put("collapseKey", ???);
+                    message.put("message", messageData);
+                } else if (EVENT_ACTION_SEND_ERROR.equals(event.action)) {
+                    JSONObject error = new JSONObject();
+                    error.put("messageId", "1"); // TODO: Should not hard-code message id?
+                    error.put("errorMessage", payloadContent);
+                    //error.put("details", ???);
+                    message.put("error", error);
+                }
+            }
+        };
     }
 
-    @Override
-    public void initialize(final CordovaInterface cordova, CordovaWebView webView) {
-        safeToFireMessages = false;
-        super.initialize(cordova, webView);
-        ChromeGcm.webView = webView;
-        executorService = cordova.getThreadPool();
-        if (cordova.getActivity().getIntent().hasExtra(PAYLOAD_LABEL)) {
-            cordova.getActivity().moveTaskToBack(true);
+    private static JSONObject extractGcmPayload(Intent intent) {
+        JSONObject payload = new JSONObject();
+        try {
+            for (String key : intent.getExtras().keySet()) {
+                // Ignore system/framework/gcm extras
+                if (
+                        key.startsWith("google") ||
+                                key.equals("android.support.content.wakelockid") ||
+                                key.equals("collapse_key") ||
+                                key.equals("from")
+                        ) {
+                    continue;
+                }
+
+                // Everything else is treated as part of the message payload (if any)
+                payload.put(key, intent.getStringExtra(key));
+            }
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, "Error parsing GCM payload: " + e);
+            return null;
         }
-        context = cordova.getActivity().getApplicationContext();
+        return payload;
     }
+
+    private static String getGcmAction(String messageType) {
+        String action = null;
+        if (GoogleCloudMessaging.MESSAGE_TYPE_SEND_ERROR.equals(messageType)) {
+            action = ChromeGcm.EVENT_ACTION_SEND_ERROR;
+        } else if (GoogleCloudMessaging.MESSAGE_TYPE_DELETED.equals(messageType)) {
+            action = ChromeGcm.EVENT_ACTION_DELETED;
+        } else if (GoogleCloudMessaging.MESSAGE_TYPE_MESSAGE.equals(messageType)) {
+            action = ChromeGcm.EVENT_ACTION_MESSAGE;
+        }
+        return action;
+    }
+
     @Override
     public void pluginInitialize() {
-        pluginInstance = this;
-    }
-
-    @Override
-    public void onReset() {
-        messageChannel = null;
-    }
-
-    @Override
-    public void onDestroy() {
-        messageChannel = null;
+        getEventHandler().pluginInitialize(this);
     }
 
     @Override
     public boolean execute(String action, CordovaArgs args, final CallbackContext callbackContext) throws JSONException {
-        if ("messageChannel".equals(action)) {
-            messageChannel = callbackContext;
-            fireQueuedEvents(args, callbackContext);
-            return true;
-        } else if ("getRegistrationId".equals(action)) {
+        if ("getRegistrationId".equals(action)) {
             getRegistrationId(args, callbackContext);
             return true;
         } else if ("send".equals(action)) {
@@ -113,61 +143,16 @@ public class ChromeGcm extends CordovaPlugin {
             unregister(args, callbackContext);
             return true;
         }
+
+        if (getEventHandler().pluginExecute(this, action, args, callbackContext)) {
+            return true;
+        }
+
         return false;
     }
 
-    static public void startApp(Context context) {
-        if (webView == null) {
-            try {
-                String activityClass = context.getPackageManager().getPackageInfo(context.getPackageName(), PackageManager.GET_ACTIVITIES).activities[0].name;
-                Intent activityIntent = Intent.makeMainActivity(new ComponentName(context, activityClass));
-                activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_FROM_BACKGROUND);
-                activityIntent.putExtra(PAYLOAD_LABEL, "dummy");
-                context.startActivity(activityIntent);
-            } catch (Exception e) {
-                Log.e(LOG_TAG, "Failed to make startActivity intent: " + e);
-            }
-        }
-    }
-
-    private void sendGCMEvent(String action, String payloadContent) {
-        JSONObject obj = new JSONObject();
-        try {
-            obj.put("action", action);
-
-            if (EVENT_ACTION_DELETED.equals(action)) {
-                // No additional data required
-            } else if (EVENT_ACTION_MESSAGE.equals(action)) {
-                JSONObject message = new JSONObject();
-                message.put("data", new JSONObject(payloadContent));
-                //message.put("collapseKey", ???);
-                obj.put("message", message);
-            } else if (EVENT_ACTION_SEND_ERROR.equals(action)) {
-                JSONObject error = new JSONObject();
-                error.put("messageId", "1"); // TODO: Should not hard-code message id?
-                error.put("errorMessage", payloadContent);
-                //error.put("details", ???);
-                obj.put("error", error);
-            }
-        } catch (JSONException e) {
-            Log.e(LOG_TAG, "Failed to create gcm event", e);
-        }
-        PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, obj);
-        pluginResult.setKeepCallback(true);
-        messageChannel.sendPluginResult(pluginResult);
-    }
-
-    private void fireQueuedEvents(final CordovaArgs args, final CallbackContext callbackContext) {
-        Log.d(LOG_TAG,"Firing " + pendingEvents.size() + " pending events");
-
-        for (EventInfo event : pendingEvents) {
-            sendGCMEvent(event.action, event.payload);
-        }
-        pendingEvents.clear();
-    }
-
     private void unregister(final CordovaArgs args, final CallbackContext callbackContext) {
-        executorService.execute(new Runnable() {
+        cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -185,7 +170,7 @@ public class ChromeGcm extends CordovaPlugin {
     }
 
     private void sendMessage(final CordovaArgs args, final CallbackContext callbackContext) {
-        executorService.execute(new Runnable() {
+        cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -213,7 +198,7 @@ public class ChromeGcm extends CordovaPlugin {
     }
 
     private void getRegistrationId(final CordovaArgs args, final CallbackContext callbackContext) {
-        executorService.execute(new Runnable() {
+        cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
                 try {

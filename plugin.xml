@@ -14,7 +14,7 @@
   <keywords>chrome,gcm,messaging</keywords>
   <repo>https://github.com/MobileChromeApps/mobile-chrome-apps.git</repo>
   <issue>https://github.com/MobileChromeApps/mobile-chrome-apps/issues</issue>
-  
+
   <dependency id="org.chromium.common" />
   <dependency id="org.chromium.storage" />
   <dependency id="com.google.playservices" />
@@ -27,6 +27,8 @@
   <name>Chrome Apps GCM API</name>
 
   <platform name="android">
+    <dependency id="org.chromium.backgroundapp" />
+
     <source-file src="src/android/ChromeGcm.java" target-dir="src/org/chromium" />
     <source-file src="src/android/GcmReceiver.java" target-dir="src/org/chromium" />
     <source-file src="src/android/GcmIntentService.java" target-dir="src/org/chromium" />
@@ -43,7 +45,7 @@
     </config-file>
     <!-- If we convert this to a library project, which uses the Manifest Merger, then we can
          add back android:maxSdkVersion="15" for GET_ACCOUNTS. The reason we can't now is that
-         we need the line to be indentical to chrome.identity so that plugman will recognize them
+         we need the line to be identical to chrome.identity so that plugman will recognize them
          as the same when config munging. -->
     <config-file target="AndroidManifest.xml" parent="/manifest">
       <uses-permission android:name="android.permission.GET_ACCOUNTS" />
