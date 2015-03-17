@@ -27,7 +27,7 @@
   <name>Chrome Apps GCM API</name>
 
   <platform name="android">
-    <dependency id="org.chromium.backgroundapp" />
+    <dependency id="org.chromium.backgroundapp@1" />
 
     <source-file src="src/android/ChromeGcm.java" target-dir="src/org/chromium" />
     <source-file src="src/android/GcmReceiver.java" target-dir="src/org/chromium" />
