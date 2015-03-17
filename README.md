@@ -21,6 +21,10 @@ The API reference is [here](https://developer.chrome.com/apps/gcm), and a full d
 * You require the 'gcm' permission to use this API
 
 # Release Notes
+
+## 1.1.1 (Mar 17, 2015)
+* Remove version constraint on backgroundapp dependency due to plugman bug CB-8696
+
 ## 1.1.0 (Mar 17, 2015)
 * Use BackgroundApp plugin to handle background events
 * Make chrome.gcm Java 1.6 compatible
