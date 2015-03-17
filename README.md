@@ -21,6 +21,12 @@ The API reference is [here](https://developer.chrome.com/apps/gcm), and a full d
 * You require the 'gcm' permission to use this API
 
 # Release Notes
+## 1.1.0 (Mar 17, 2015)
+* Use BackgroundApp plugin to handle background events
+* Make chrome.gcm Java 1.6 compatible
+* Refactor to use messageQueue for native -> JS events (CSP compliant)
+* Fix race conditions causing onLaunched not to fire
+
 ## 1.0.3 (Jan 27, 2015)
 * Split Android permissions within plugin.xml into separate tags (fixes #494)
 * Add custom permission so that other apps can't snoop our messages
