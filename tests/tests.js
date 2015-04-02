@@ -40,7 +40,7 @@ chrome.gcm.onSendError.addListener(function(error) {
   logger('onSendError fired (' + getTimestamp() + '). error = \n' + JSON.stringify(error, null, 4));
 });
 
-registerManualTests('chrome.gcm', function(rootEl, addButton) {
+exports.defineManualTests = function(rootEl, addButton) {
 
   containerElement = rootEl;
 
@@ -55,4 +55,4 @@ registerManualTests('chrome.gcm', function(rootEl, addButton) {
     }
   });
 
-});
+};
