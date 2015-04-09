@@ -59,6 +59,9 @@ exports.defineManualTests = function(rootEl, addButton) {
 
 exports.defineAutoTests = function() {
   'use strict';
+
+  require('cordova-plugin-chrome-apps-test-framework.jasmine_helpers').addJasmineHelpers();
+
   var senderid = '90031296475';
   var sender = senderid+ "@gcm.googleapis.com";
   var messageCounter = 0;
