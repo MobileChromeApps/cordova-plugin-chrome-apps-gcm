@@ -28,16 +28,21 @@ function getTimestamp() {
   return Date.now();
 }
 
-chrome.gcm.onMessage.addListener(function(message) {
-  logger('onMessage fired (' + getTimestamp() + '). message = \n' + JSON.stringify(message, null, 4));
-});
+// As this file is run at app startup, wait for deviceready before
+// using any plugin APIs
+document.addEventListener("deviceready", function() {
 
-chrome.gcm.onMessagesDeleted.addListener(function(notificationId, byUser) {
-  logger('onMessagesDeleted fired (' + getTimestamp() + ')');
-});
+  chrome.gcm.onMessage.addListener(function(message) {
+    console.log('onMessage fired (' + getTimestamp() + '). message = \n' + JSON.stringify(message, null, 4));
+  });
 
-chrome.gcm.onSendError.addListener(function(error) {
-  logger('onSendError fired (' + getTimestamp() + '). error = \n' + JSON.stringify(error, null, 4));
+  chrome.gcm.onMessagesDeleted.addListener(function(notificationId, byUser) {
+    console.log('onMessagesDeleted fired (' + getTimestamp() + ')');
+  });
+
+  chrome.gcm.onSendError.addListener(function(error) {
+    console.log('onSendError fired (' + getTimestamp() + '). error = \n' + JSON.stringify(error, null, 4));
+  });
 });
 
 exports.defineManualTests = function(rootEl, addButton) {
