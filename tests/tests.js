@@ -53,10 +53,10 @@ exports.defineManualTests = function(rootEl, addButton) {
     var message = createMessage('delay');
     try {
       chrome.gcm.send(message, function(msgid) {
-        logger('Delay message "' + msgid + '" sent (' + getTimestamp() + ')');
+        console.log('Delay message "' + msgid + '" sent (' + getTimestamp() + ')');
       });
     } catch (e) {
-      logger('Exception sending delay message: ' + e);
+      console.log('Exception sending delay message: ' + e);
     }
   });
 
