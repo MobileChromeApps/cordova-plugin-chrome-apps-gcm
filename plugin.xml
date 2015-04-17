@@ -4,7 +4,9 @@
   Use of this source code is governed by a BSD-style license that can be
   found in the LICENSE file.
 -->
-<plugin xmlns="http://cordova.apache.org/ns/plugins/1.0"    xmlns:android="http://schemas.android.com/apk/res/android"    id="org.chromium.gcm"
+<plugin xmlns="http://cordova.apache.org/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="cordova-plugin-chrome-apps-gcm"
     version="1.1.2-dev">
   <engines>
     <engine name="cordova-android" version=">=4" />
