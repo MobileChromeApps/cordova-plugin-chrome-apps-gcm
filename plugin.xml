@@ -17,8 +17,8 @@
   <repo>https://github.com/MobileChromeApps/mobile-chrome-apps.git</repo>
   <issue>https://github.com/MobileChromeApps/mobile-chrome-apps/issues</issue>
 
-  <dependency id="org.chromium.common" />
-  <dependency id="org.chromium.storage" />
+  <dependency id="cordova-plugin-chrome-apps-common" />
+  <dependency id="cordova-plugin-chrome-apps-storage" />
 
   <js-module src="gcm.js" name="gcm">
     <clobbers target="chrome.gcm" />
@@ -27,7 +27,7 @@
   <name>Chrome Apps GCM API</name>
 
   <platform name="android">
-    <dependency id="org.chromium.backgroundapp" />
+    <dependency id="cordova-plugin-background-app" />
     <framework src="com.android.support:support-v4:+" />
     <framework src="com.google.android.gms:play-services-gcm:+" />
 
