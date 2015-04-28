@@ -11,10 +11,10 @@ var platform = cordova.require('cordova/platform');
 var GCM_STORAGE_PREFIX = 'gcm-';
 var GCM_REGKEY = GCM_STORAGE_PREFIX + 'RegID';
 
-var Event = require('org.chromium.common.events');
+var Event = require('cordova-plugin-chrome-apps-common.events');
 var exec = require('cordova/exec');
 var channel = require('cordova/channel');
-var helpers = require('org.chromium.common.helpers');
+var helpers = require('cordova-plugin-chrome-apps-common.helpers');
 var eventsToFireOnStartUp = [];
 
 exports.MAX_MESSAGE_SIZE = 4096;
