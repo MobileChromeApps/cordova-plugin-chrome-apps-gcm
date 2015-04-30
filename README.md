@@ -22,6 +22,10 @@ The API reference is [here](https://developer.chrome.com/apps/gcm), and a full d
 
 # Release Notes
 
+## 1.2.0 (April 30, 2015)
+- Renamed plugin to pubilsh to NPM
+- Now using cordova-background-app@2.0.0 for better background processing
+
 ## 1.1.1 (Mar 17, 2015)
 * Remove version constraint on backgroundapp dependency due to plugman bug CB-8696
 
