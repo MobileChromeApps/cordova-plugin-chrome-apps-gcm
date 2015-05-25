@@ -10,6 +10,7 @@ var platform = cordova.require('cordova/platform');
 
 var GCM_STORAGE_PREFIX = 'gcm-';
 var GCM_REGKEY = GCM_STORAGE_PREFIX + 'RegID';
+var GCM_REGKEY_SENDERS = GCM_STORAGE_PREFIX + 'RegID.S';
 
 var Event = require('cordova-plugin-chrome-apps-common.events');
 var exec = require('cordova/exec');
@@ -52,7 +53,7 @@ exports.send = function(message, callback) {
 
 exports.register = function(senderids, callback) {
   var win = function(registrationId) {
-    setRegistrationID(registrationId);
+    setRegistrationID(registrationId, senderids);
     callback(registrationId);
   };
   var fail = function(msg) {
@@ -67,7 +68,7 @@ exports.register = function(senderids, callback) {
       return callback(regid);
     }
     exec(win, fail, 'ChromeGcm', 'getRegistrationId', senderids);
-  });
+  }, senderids);
 };
 
 exports.unregister = function(callback) {
@@ -88,15 +89,21 @@ exports.unregister = function(callback) {
   });
 };
 
-function setRegistrationID(regid) {
+function setRegistrationID(regid, senderIds) {
   var regidObject = {};
   regidObject[GCM_REGKEY] = regid;
+  regidObject[GCM_REGKEY_SENDERS] = senderIds && senderIds.join();
   chrome.storage.internal.set(regidObject);
 }
 
-function getRegistrationID(callback) {
-  chrome.storage.internal.get(GCM_REGKEY, function(items) {
-    callback(items[GCM_REGKEY]);
+function getRegistrationID(callback, senderIds) {
+  chrome.storage.internal.get([GCM_REGKEY, GCM_REGKEY_SENDERS], function(items) {
+    if (senderIds && items[GCM_REGKEY_SENDERS] && senderIds.join() != items[GCM_REGKEY_SENDERS]) {
+      // SenderIds have changed. re-register.
+      callback('');
+    } else {
+      callback(items[GCM_REGKEY]);
+    }
   });
 }
 
