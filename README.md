@@ -22,6 +22,9 @@ The API reference is [here](https://developer.chrome.com/apps/gcm), and a full d
 
 # Release Notes
 
+## 1.2.1 (May 26, 2015)
+- Don't cache registration ID when `SENDER_ID` changes
+
 ## 1.2.0 (April 30, 2015)
 - Renamed plugin to pubilsh to NPM
 - Now using cordova-background-app@2.0.0 for better background processing
